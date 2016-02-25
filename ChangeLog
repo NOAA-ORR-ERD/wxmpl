@@ -1,0 +1,134 @@
+10-17-2011  Carlo Segre <segre@iit.edu>
+        * Release 2.0.0
+        * Replaced all references to numerix with numpy functions
+
+02-22-2009  Ken McIvor  <mcivor@iit.edu>
+	* Fixed a serious bug in the way top-level parent windows were
+	  determined.
+
+02-21-2009  Ken McIvor  <mcivor@iit.edu>
+	* Fixed a bug that was breaking plotit's quickplot mode ('-q')
+
+02-20-2009  Ken McIvor  <mcivor@iit.edu>
+	* Release: 1.3.0
+	* Compatability fixes for Matplotlib >= 0.98.1
+	* Improved support for wxMAC and PostScript printing
+	* PlotPanel and PlotFrame have a new keyword argument, autoscaleUnzoom,
+	  which controls whether an Axes is autoscaled when the user unzooms all
+	  the way out.
+	* The DestructableViewMixin class has been removed (Python does circular
+	  references just fine, nowadays)
+
+11-08-2007  Ken McIvor  <mcivor@iit.edu>
+	* Release: 1.2.9
+	* Fixed a bug in printing support (wx.PrintData.SetPrinterCommand() is
+	  undefined on some platforms).
+	* Compatability fixes for Matplotlib >= 0.90
+
+08-28-2006  Ken McIvor  <mcivor@iit.edu>
+	* Release: 1.2.8
+	* Updated metasetup.py to version 1.1.
+
+06-20-2006  Ken McIvor  <mcivor@iit.edu>
+	* Fixed a bug in PlotPanel's EVT_ACTIVATE registration that was reported
+	  by Andrew Jones.  PlotPanel would register with the last toplevel parent
+	  window instead of the first one, resulting in PyDeadObjectErrors.
+	* PlotPanels now unregister their EVT_ACTIVATE handlers in OnDestroy,
+	  making it possible to dynamically create and destroy them.
+
+04-14-2006  Ken McIvor  <mcivor@iit.edu>
+	* Fixed a bug in the anti-crosshair-junk logic (the decorations were being
+	  redrawn from within _onPaint()).
+
+04-13-2006  Ken McIvor  <mcivor@iit.edu>
+	* Release: 1.2.7
+	* `plotit' would occasionally hang while exiting during quickscans at APS
+	  10ID.  This should be fixed now.
+
+04-05-2006  Ken McIvor  <mcivor@iit.edu>
+	* Release: 1.2.6
+	* Fixed the crosshair junk that was sometimes left behind after a repaint.
+
+02-23-2006  Ken McIvor  <mcivor@iit.edu>
+	* Release: 1.2.5
+	* Fixed an increadibly daft bug that was reported by Philippe Dalet.
+	* Corrected a grammerical error in plotit's help message.
+	* AxesLimits.restore() now autoscales the axes when unzooming all the way
+	  out, allowing you to add lines outside the initial plot limits while
+	  zoomed in.
+
+12-13-2005  Ken McIvor  <mcivor@iit.edu>
+	* Fixed FigurePrinter.pageSetup() so it now honors the paper size and
+	  other parameters correctly.
+
+11-30-2005  Ken McIvor  <mcivor@iit.edu>
+	* Release: 1.2.4
+	* Point and selection events now work properly.
+	* Added a new demo to cover using the point and selection API.
+
+11-14-2005  Ken McIvor  <mcivor@iit.edu>
+	* Release: 1.2.3
+	* Renamed `python/' to `lib/'
+	* Fixed an incompatability with FigureCanvasWx.draw() introduced in
+	  matplotlib 0.84.
+	* Included the `plotit' script in the distribution.
+	* Updated setup.py to use metasetup.py
+
+07-10-2005  Ken McIvor  <mcivor@iit.edu>
+	* Release: 1.2.2
+	* Fixed a bug in the way channels without data were being handled that
+	  resulted in axes autoscaling starting at x=0 when the data finally
+	  arrived.
+
+05-26-2005  Ken McIvor  <mcivor@iit.edu>
+	* Release: 1.2.1
+
+05-23-2005  Ken McIvor  <mcivor@iit.edu>
+	* Disabled printing under OSX.  The DPI of the printer is always being
+	  reported as 72, resulting in ugly plots.
+
+5-19-2005  Ken McIvor  <mcivor@iit.edu>
+	* Release: 1.2
+	* Added support for the wxPython printing framework via FigurePrinter and
+	  FigurePrintout.
+	* Added printing entries to the "File" menu of PlotFrame.
+
+05-16-2005  Ken McIvor  <mcivor@iit.edu>
+	* Crosshairs now redraw correctly after a point selection.
+
+05-15-2005  Ken McIvor  <mcivor@iit.edu>
+	* Changed the way axes.legend() is invoked so that only the Channel lines
+	  will be included in the resulting legend.
+	* Added getColor(), getStyle(), and getMarker() to the Channel class to
+	  provide finer-grained control over the line styles.
+
+05-12-2005  Ken McIvor  <mcivor@iit.edu>
+	* Fixed a bug in StripCharter where axes.legend() was being called when
+	  there were no lines plotted.
+
+05-05-2005  Ken McIvor  <mcivor@iit.edu>
+	* release: 1.1
+	* Added extra keyword arguments to PlotApp
+	* The Buffer classes now work properly and use matplotlib.numerix.
+	* Changed the directory layout of the distribution to make building Debian
+	  packages easier.
+
+05-04-2005  Ken McIvor  <mcivor@iit.edu>
+	* release: 1.0
+	* Support for stripcharting (updating a plot with new data as it arrives)
+	  has been added and an example is provided in `wxmpl-stripchart-demo.py'.
+	* The PlotApp class has been added to ease creating a single plot window.
+	* New wxPython-based interface for point and area selection events.
+	* The user-interaction features (e.g. zooming) may be selectively disabled.
+	* The PlotFrame now has File and Help menus and accelerator keys for saving
+	  the plot and and closing the window.
+	* A demonstration of shared X axes has been added to `wxmpl-demos.py'.
+	* A port of the XDP `plotit' application to WxMpl, `wxmpl-plotit.py', has
+	  beed added to the distribution.
+	* Documentation generated from the docstrings of `wxmpl.py' is now
+	  included in the `doc/' subdirectory of the distribution.
+	* A brief tutorial, "Getting Started with WxMpl and Matplotlib", is now
+	  included in the `tutorial/' subdirectory of the distribution.
+
+03-09-2005  Ken McIvor  <mcivor@iit.edu>
+	* release: 0.9 (intial public release)

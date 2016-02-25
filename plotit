@@ -1,0 +1,1229 @@
+#!/usr/bin/env python
+
+# Name: plotit
+# Purpose: Experiment data visualization
+# Author: Ken McIvor <mcivor@iit.edu>
+#
+# Copyright 2004-2009 Illinois Institute of Technology
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL ILLINOIS INSTITUTE OF TECHNOLOGY BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+#
+# Except as contained in this notice, the name of Illinois Institute
+# of Technology shall not be used in advertising or otherwise to promote
+# the sale, use or other dealings in this Software without prior written
+# authorization from Illinois Institute of Technology.
+
+# ChangeLog
+#
+# 10-17-2011  Carlo Segre <segre@iit.edu>
+#  * Release 3.0
+#  * Replace all references to Numerix with Numpy
+# 02-21-2009  Ken McIvor <mcivor@iit.edu>
+#  * Release 2.3.4
+#  * Fixed a bug that was breaking the quickplot ('-q') mode
+# 02-20-2009  Ken McIvor <mcivor@iit.edu>
+#  * Release 2.3.3
+#  * Stopped using the deprecated 'sre' module
+#  * Updated legend formatting for matplotlib 0.98.x
+#  * Dollar signs in axes labels are now properly escaped
+# 04-06-2006  Ken McIvor <mcivor@iit.edu>
+#  * Release 2.3.2
+#  * Had another go at shutting down cleanly after the "exit" command while in
+#    stripchart mode.
+#  * Fixed a bug in cmd_START_PLOT()'s error handling.
+# 04-04-2006  Ken McIvor <mcivor@iit.edu>
+#  * Release 2.3.1
+#  * Attemped to fix a subtle race condition that caused the plot window to
+#    survive the "exit" command, hanging around at the end of MX quick scans.
+#  * Switched to using LinearLocator(5) for X and Y axis tick locations to
+#    yield nicer looking plots for the occasional corner cases (e.g. when
+#    AutoLocator gives you 9 ticks with overlapping labels).
+# 11-14-2005  Ken McIvor <mcivor@iit.edu>
+#  * Release: 2.3
+#  * Column names may be used in expressions if they are present in the files
+#  * Empty data files no longer cause the entire plot to fail
+#  * Column expressions are now masked arrays, clamping +/- INF
+# 11-11-2005  Ken McIvor <mcivor@iit.edu>
+#  * Merged the ScalarFormatter fix from August back into the main trunk.  This
+#    fix undoes some of the confusing axis labeling caused by changes
+#    introduced in matplotlib 0.81.
+# 10-21-2005  Ken McIvor <mcivor@iit.edu>
+#  * Release: 2.2
+#  * Added full support for plotgngu.pl's start_plot command.  The two integer
+#    arguments that were previously ignored are now required and specify the
+#    number of columns of independently varying data and the column index that
+#    contains the abscissa (starting from zero).
+# 08-08-2005  Ken McIvor <mcivor@iit.edu>
+#  * Release: 2.1.1
+#  * Worked around a problem in matplotlib so that PlotIt no longer chokes on
+#    expressions that evaluate to inf or NaN.
+# 07-10-2005  Ken McIvor <mcivor@iit.edu>
+#  * Release: 2.1
+#  * Quickplot mode now correctly handles single-column data files.
+#  * You can now plot only the Y expressions of files from the command line.
+#  * PlotIt now tries to remeber its last window position, which should improve
+#    the user experience when it's being used by MX to display scan data.
+# 05-26-2005  Ken McIvor <mcivor@iit.edu>
+#  * Release: 2.0
+# 05-23-2005  Ken McIvor <mcivor@iit.edu>
+#  * Fixed a bug in the `set linestyles' command.
+#  * Made the linestyles, ticksize, and ticks `set' commands more robust
+#    against invalid arguments.
+#  * The PlotItApp no longer redirects stderr.
+# 05-19-2005  Ken McIvor <mcivor@iit.edu>
+#  * Release: 2.0rc4
+#  * The command-line invocation has been changed so `$ plotit' won't appear to
+#    hang as it reads commands from standard input.
+#  * Added a quick-plotting mode that graphs the first two columns of files.
+#  * Expression evaluation only does one row at a time if an error occurs.
+#  * Error handling in expression evaluation is much more robust.
+# 05-15-2005  Ken McIvor <mcivor@iit.edu>
+#   * Release: 2.0rc3 (`plot' is now `plotit')
+#   * Refactored the static vs. stripcharting logic out of PlotApp
+#   * Cleaned up the MX kludges, especially the workaround for wx.PostEvent()
+#     hanging after MainLoop() has exited (a queue is now used in place of the
+#     CommandEvent).
+#   * The plot window is now unclosable while stripcharting stdin.
+#   * Fixed up bug where cmd_START_PLOT() relied entirely on parse_command() to
+#     split up the equations.
+#   * Added several new `set' commands: ticks, ticksize, linestyles.
+#   * Added the `marker' command to draw vertical lines.
+#   * Plot expressions now recognize `@N' for column names in addition to `$N'.
+#   * Added the ability to do quick plots of multiple data files from the
+#     command line.
+# 05-12-2005  Ken McIvor <mcivor@iit.edu>
+#   * Added some missing calls to sys.exit() to the ImportError handlers.
+#   * Added the `start_plot' command and special case handling for MX's
+#     inconsistent syntax (e.g. "start_plot;0;1;$f[0]/$f[1]").
+#   * The `plot' command is now a no-op, since MX sends it after every `data'
+#     command.
+#   * Fixed a bug where `convert_plotgnu_expression()' was omitting the rest of
+#     the expression after the last channel number (e.g. "log($0/$1)" was
+#     becoming "log($2/$3")
+#   * Added an `exit' command.
+#   * Fixed the way the PlotApp and FileReaderThread interact because
+#     `wx.PostEvent()' blocks after the PlotApp has exited.
+# 05-10-2005  Ken McIvor <mcivor@iit.edu>
+#   * release: 2.0rc2
+#   * Default behavior is now to watch stdin, but not watch files.  The `-w'
+#     argument has been changed to reflect this.
+#   * Plot window now has a correct title, rather than just "WxMpl".
+# 05-05-2005  Ken McIvor <mcivor@iit.edu>
+#   * release: 2.0rc1
+#   * WxMpl is now used for the plotting, rather than including wxPyPlot
+#   * The `plot' command has been changed to be compatible with `plotgnu'
+#   * A new command, `line', has been added to support the new equation syntax
+#   * Replotting is now driven by a timer, rather than the arrival of new data
+#   * The Python 2.1 compatability fixes have been removed, since matplotlib
+#     requires Python 2.3 or later.
+# 10-04-2004  Ken McIvor <mcivken@iit.edu>
+#   * release: 1.1
+#   * Debian Stable fixes:
+#     - removed `typecode' keyword from Numerix.zeros()
+#     - forcibly placed wxPython.wx.wxNewId() into wx as NewId()
+# 10-03-2004  Ken McIvor <mcivken@iit.edu>
+#   * release: 1.0
+
+__version__ = '2.3.2'
+
+
+import ConfigParser
+import os.path
+import re
+import sys
+import threading
+
+try:
+    import wx
+except ImportError:
+    if __name__ == '__main__':
+        sys.stderr.write('''\
+This program requires wxPython, the Python bindings for the wxWidgets GUI
+framework.
+
+    wxPython can be downloaded from http://www.wxpython.org
+''')
+        sys.exit(1)
+
+try:
+    import matplotlib
+except ImportError:
+    if __name__ == '__main__':
+        sys.stderr.write('''\
+This program requires matplotlib, Python's 2D plotting library.
+
+    matplotlib can be downloaded from http://matplotlib.sourceforge.net
+''')
+        sys.exit(1)
+
+try:
+    import wxmpl
+except ImportError:
+    if __name__ == '__main__':
+        sys.stderr.write('''\
+This program requires WxMpl, a library for embedding matplotlib in wxPython
+applications.
+
+    WxMpl can be downloaded from http://agni.phys.iit.edu/~kmcivor/wxmp/
+''')
+        sys.exit(1)
+
+try:
+    import xdp.io # if it's available, use XDP to load data
+except ImportError:
+    xdp = None
+
+
+import numpy as NumPy
+from matplotlib.font_manager import FontProperties
+
+
+class Queue:
+    def __init__(self):
+        self.mutex = threading.Lock()
+        self.queue = []
+
+    def put(self, item):
+        self.mutex.acquire()
+        self.queue.append(item)
+        self.mutex.release()
+
+    def getAll(self):
+        self.mutex.acquire()
+        items = self.queue[:]
+        del self.queue[:]
+        self.mutex.release()
+        return items
+
+
+#
+# Functions to load and store the plot window's position.
+#
+
+# FIXME: this is rather POSIX-specific
+PLOTIT_POSITION_FILE = '~/.plotitrc'
+
+
+def load_window_position():
+    fnam = os.path.expanduser(PLOTIT_POSITION_FILE)
+    cp = ConfigParser.ConfigParser()
+
+    try:
+        cp.read([fnam])
+        x = cp.getint('position', 'x')
+        y = cp.getint('position', 'y')
+    except Exception:
+        return wx.DefaultPosition
+
+    return wx.Point(x, y)
+
+
+def store_window_position(pos):
+    fnam = os.path.expanduser(PLOTIT_POSITION_FILE)
+    cp = ConfigParser.ConfigParser()
+    cp.add_section('position')
+    cp.set('position', 'x', str(pos.x))
+    cp.set('position', 'y', str(pos.y))
+ 
+    try:
+        output = file(fnam, 'w')
+        cp.write(output)
+        output.close()
+    except Exception:
+        pass
+
+
+#
+# wxPython Application class
+#
+
+class PlotItApp(wx.App):
+    def __init__(self, options, arguments, **kwds):
+        self.options = options
+        self.director = None
+        self.arguments = arguments
+        wx.App.__init__(self, **kwds)
+
+    def OnInit(self):
+        self.frame = PlotFrame(pos=load_window_position())
+
+        if len(self.arguments) < 2 and not options.quick:
+            self.init_plotgnu()
+        else:
+            self.init_quickplot()
+
+        self.frame.Show(True)
+        return True
+
+    def init_plotgnu(self):
+        args = self.arguments
+
+        if args[0] == '-':
+            inputFile = sys.stdin
+            options.watch = not options.watch
+        else:
+            try:
+                inputFile = file(args[0], 'r')
+            except IOError, e:
+                fatalIOError(e)
+
+        if self.options.watch:
+            self.director = StripChartDirector(self.frame, inputFile)
+        else:
+            self.director = PlotCommandDirector(self.frame, inputFile)
+
+    def init_quickplot(self):
+        args = self.arguments
+        style = 'lp'
+
+        if options.lines and options.points:
+            pass # let people type `-lp' like in GNUPLOT
+        elif options.lines:
+            style = 'l'
+        elif options.points:
+            style = 'p'
+
+        if options.quick:
+            self.director = QuickPlotDirector(self.frame, args, style)
+        else:
+            if len(args) == 2 or not is_plot_expression(args[1]):
+                xExpr = None
+                yExpr, fileNames = args[0], args[1:]
+            else:
+                xExpr, yExpr, fileNames = args[0], args[1], args[2:]
+
+            self.director = ExpressionPlotDirector(self.frame, xExpr, yExpr,
+                fileNames, style)
+
+    def cleanup(self):
+        self.director.cleanup()
+
+
+class PlotFrame(wxmpl.PlotFrame):
+    ABOUT_TITLE = 'About plotit'
+
+    ABOUT_MESSAGE = ('plotit %s\n' %  __version__
+        + 'Written by Ken McIvor <mcivor@iit.edu>\n'
+        + 'Copyright 2004-2005 Illinois Institute of Technology')
+
+    def __init__(self, **kwds):
+        wxmpl.PlotFrame.__init__(self, None, -1, 'plotit', **kwds)
+
+
+#
+# Classes to perform the various kinds of plotting
+#
+
+class PlotDirector:
+    def __init__(self, frame):
+        self.frame = frame
+        wx.EVT_CLOSE(self.frame, self.OnClose)
+
+    def OnClose(self, evt):
+        store_window_position(self.frame.GetPosition())
+        evt.Skip()
+
+    def setup_axes(self, axes):
+        if matplotlib.__version__ >= '0.81':
+            axes.yaxis.set_major_formatter(
+                matplotlib.ticker.OldScalarFormatter())
+            axes.yaxis.set_major_locator(
+                matplotlib.ticker.LinearLocator(5))
+
+            axes.xaxis.set_major_formatter(
+                matplotlib.ticker.OldScalarFormatter())
+            axes.xaxis.set_major_locator(
+                matplotlib.ticker.LinearLocator(5))
+
+    def cleanup(self):
+        pass
+
+
+class PlotCommandDirector(PlotDirector):
+    def __init__(self, frame, inputFile):
+        PlotDirector.__init__(self, frame)
+
+        frame.SetTitle(get_frame_title(inputFile))
+        interpreter = CommandInterpreter(frame.get_figure().gca(),
+           inputFile, ignoreExit=True)
+
+        line = inputFile.readline()
+        while line:
+            line = line.strip()
+            interpreter.doCommand(line)
+            line = inputFile.readline()
+        interpreter.replot()
+
+
+class StripChartDirector(PlotDirector):
+    def __init__(self, frame, inputFile):
+        PlotDirector.__init__(self, frame)
+
+        axes = frame.get_figure().gca()
+        self.setup_axes(axes)
+
+        frame.SetTitle(get_frame_title(inputFile))
+        self.inputFile = inputFile
+        self.canClose = inputFile is not sys.stdin
+
+        self.interpreter = CommandInterpreter(axes, inputFile)
+        self.queue = Queue()
+        self.fileReader = FileReaderThread(inputFile, self.queue)
+        self.timer = wx.PyTimer(self.OnTimer)
+
+        self.timer.Start(250)
+        self.fileReader.start()
+
+    def OnClose(self, evt):
+        if not self.canClose and evt.CanVeto() and self.fileReader.isAlive():
+            wx.Bell()
+            evt.Veto()
+        else:
+            self.timer.Stop()
+            PlotDirector.OnClose(self, evt)
+
+    def OnTimer(self):
+        interpreter = self.interpreter
+
+        for cmd in self.queue.getAll():
+            interpreter.doCommand(cmd)
+            if interpreter.hasExited:
+                self.timer.Stop()
+                try:
+                    self.inputFile.close()
+                except:
+                    pass
+
+        if self.fileReader.isAlive():
+            interpreter.replot()
+        else:
+            self.timer.Stop()
+            interpreter.replot()
+
+    def cleanup(self):
+        if self.fileReader.isAlive():
+            self.fileReader.join()
+
+
+class QuickPlotDirector(PlotDirector):
+    def __init__(self, frame, inputFiles, style):
+        PlotDirector.__init__(self, frame)
+        frame.SetTitle('PlotIt')
+
+        axes = frame.get_figure().gca()
+        self.setup_axes(axes)
+
+        # FIXME: refactor this chunk into a function shared by
+        # QuickPlotDirector and ExpressionPlotDirector
+        lines = []
+        for inputFile in inputFiles[:]:
+            x, y = quickplot_evaluate_file(inputFile)
+            if x is None or y is None:
+                inputFiles.remove(inputFile)
+            else:
+                lines.append((x, y))
+
+        inputs = [split_path(x) for x in inputFiles]
+        if len(inputs) == 1:
+            idx = 0
+        else:
+            idx = len(os.path.commonprefix([x[0] for x in inputs]))
+
+        matplotlib.rc('lines', markersize=2)
+        for i, (x, y) in enumerate(lines):
+            if x is None or y is None:
+                continue
+
+            path, name = inputs[i]
+            fullName = os.path.join(path[idx:], name)
+            line = axes.plot(x, y, label=fullName)[0]
+
+            if style == 'l':
+                pass
+            elif style == 'p':
+                line.set_linestyle('None')
+                line.set_marker('o')
+            else:
+                line.set_marker('o')
+            line.set_markeredgecolor(line.get_color())
+            line.set_markerfacecolor(line.get_color())
+
+        if not axes.get_lines():
+            sys.stderr.write('%s: no data to plot\n'
+                % os.path.basename(sys.argv[0]))
+            sys.exit(1)
+
+        axes.legend(numpoints=2, prop=FontProperties(size='x-small'))
+
+
+class ExpressionPlotDirector(PlotDirector):
+    def __init__(self, frame, xExpr, yExpr, inputFiles, style):
+        PlotDirector.__init__(self, frame)
+        frame.SetTitle('PlotIt')
+
+        axes = frame.get_figure().gca()
+        self.setup_axes(axes)
+        axes.set_ylabel(yExpr.replace('@', '$').replace('$', '\$'))
+
+        if xExpr is None:
+            axes.set_xlabel('0...N')
+        else:
+            axes.set_xlabel(xExpr.replace('@', '$').replace('$', '\$'))
+
+        lines = []
+        for inputFile in inputFiles[:]:
+            x, y = evaluate_file(inputFile, xExpr, yExpr)
+            if x is None or y is None:
+                inputFiles.remove(inputFile)
+            else:
+                lines.append((x, y))
+
+        inputs = [split_path(x) for x in inputFiles]
+        if len(inputs) == 1:
+            idx = 0
+        else:
+            idx = len(os.path.commonprefix([x[0] for x in inputs]))
+
+        matplotlib.rc('lines', markersize=2)
+        for i, (x, y) in enumerate(lines):
+            if x is None or y is None:
+                continue
+
+            path, name = inputs[i]
+            fullName = os.path.join(path[idx:], name)
+            line = axes.plot(x, y, label=fullName)[0]
+
+            if style == 'l':
+                pass
+            elif style == 'p':
+                line.set_linestyle('None')
+                line.set_marker('o')
+            else:
+                line.set_marker('o')
+            line.set_markeredgecolor(line.get_color())
+            line.set_markerfacecolor(line.get_color())
+
+        if not axes.get_lines():
+            sys.stderr.write('%s: no data to plot\n'
+                % os.path.basename(sys.argv[0]))
+            sys.exit(1)
+
+        axes.legend(numpoints=2, prop=FontProperties(size='x-small'))
+
+    def cleanup(self):
+        pass
+
+
+
+#
+# Thread that pushes lines from a file into a Queue
+#
+
+class FileReaderThread(threading.Thread):
+    def __init__(self, inputFile, queue):
+        threading.Thread.__init__(self, name='FileReader')
+        self.queue = queue
+        self.inputFile = inputFile
+
+    def run(self):
+        queue = self.queue
+        inputFile = self.inputFile
+
+        line = inputFile.readline()
+        while line:
+            line = line.strip()
+            queue.put(line)
+            line = inputFile.readline()
+
+
+#
+# Class that executes plotting commands
+#
+
+class CommandInterpreter:
+    def __init__(self, axes, inputFile, ignoreExit=False):
+        self.axes = axes
+        self.ignoreExit = ignoreExit
+
+        if inputFile is sys.stdin:
+            self.fileDesc = 'standard input'
+        else:
+            self.fileDesc = 'file `%s\'' % inputFile.name
+
+        self.buffer = wxmpl.MatrixBuffer()
+        self.charter = wxmpl.StripCharter(axes)
+        self.channels = []
+        self.hasExited = False
+        self.need_replot = False
+
+        matplotlib.rc('lines', markersize=2)
+
+    def replot(self):
+        if self.need_replot and not self.hasExited:
+            self.need_replot = False
+            self.charter.update()
+
+    def doCommand(self, command):
+        tokens = self.parse_command(command)
+        if not len(tokens):
+            return
+
+        cmd, args = tokens[0].upper(), tokens[1:]
+        method = getattr(self, 'cmd_%s'%cmd, None)
+        if callable(method) and method(args):
+            self.need_replot = True
+
+    def parse_command(self, command):
+        if command.startswith('start_plot;'):
+            return ['start_plot'] + command.split(';')[1:]
+
+        try:
+            return tokenize(command)
+        except Exception:
+            return []
+
+    def cmd_START_PLOT(self, args):
+        if len(args) < 3:
+            return False
+
+        try:
+            independent_variable_count = int(args[0])
+            innermost_loop_motor_index = int(args[1])
+        except (ValueError, OverflowError), e:
+            print >> sys.stderr, (
+                'Error in "start_plot" statement for file %s: %s'
+                % (self.fileDesc, e))
+            return False
+
+        if independent_variable_count < 1:
+            independent_variable_count = 0
+
+        if innermost_loop_motor_index < 0:
+            innermost_loop_motor_index = 0
+
+        xExpr = '$%d' % (innermost_loop_motor_index + 1)
+
+        for eqn in args[2:]:
+            yExpr = convert_plotgnu_expression(eqn, independent_variable_count)
+            channel = ExpressionChannel(self.buffer, xExpr, yExpr,
+                self.fileDesc)
+            channel.marker = 'o'
+            self.channels.append(channel)
+        self.charter.setChannels(self.channels)
+        return True
+
+    def cmd_PLOT(self, args):
+        return False
+
+    def cmd_REPLOT(self, args):
+        self.replot()
+        return False
+
+    def cmd_SET(self, args):
+        if len(args):
+            var, args = args[0].upper(), args[1:]
+
+            if len(args) and args[0] == '=':
+                args = args[1:]
+
+            method = getattr(self, 'set_%s'%var, None)
+            if callable(method):
+                return method(args)
+        return False
+
+    def cmd_DATA(self, args):
+        if not len(args):
+            return False
+
+        data = [0.0] * len(args)
+        for i, point in enumerate(args):
+            try:
+                data[i] = float(point)
+            except Exception, e:
+                pass
+
+        self.buffer.append(data)
+        for channel in self.channels:
+            channel.recalculate()
+        return True
+
+    def cmd_MARKER(self, args):
+        if len(args) != 1:
+            return False
+
+        try:
+            x = float(args[0])
+        except:
+            return False
+
+        self.axes.axvline(x, color='k', linestyle='--')
+        return True
+
+    def set_TITLE(self, args):
+        if len(args) == 1:
+            self.axes.set_title(args[0])
+            return True
+        else:
+            return False
+
+    def set_XLABEL(self, args):
+        if len(args) == 1:
+            self.axes.set_xlabel(args[0])
+            return True
+        else:
+            return False
+
+    def set_YLABEL(self, args):
+        if len(args) == 1:
+            self.axes.set_ylabel(args[0])
+            return True
+        else:
+            return False
+
+    def set_TIC(self, args):
+        return self.set_TICKS(args)
+
+    def set_TICS(self, args):
+        return self.set_TICKS(args)
+
+    def set_TICSIZE(self, args):
+        return self.set_TICKSIZE(args)
+
+    def set_TICKS(self, args):
+        if len(args):
+            ticks = []
+            for tick in args:
+                if matplotlib.lines.Line2D._markers.has_key(tick):
+                    ticks.append(tick)
+                else:
+                    ticks.append(None)
+            for i, marker in enumerate(ticks[:len(self.channels)]):
+                self.channels[i].marker = marker
+        else:
+            for channel in self.channels:
+                channel.marker = None
+        self.charter.setChannels(self.channels)
+        return True
+
+    def set_TICKSIZE(self, args):
+        if len(args) == 0:
+            matplotlib.rc('lines', markersize=2)
+            return
+        elif len(args) != 1:
+            return True
+
+        try:
+            size = float(args[0])
+        except:
+            return False
+
+        if markersize <= 0:
+            return False
+
+        matplotlib.rc('lines', markersize=size)
+        return True
+
+    def set_LINESTYLES(self, args):
+        if len(args):
+            styles = []
+            for style in args:
+                if matplotlib.lines.Line2D._lineStyles.has_key(style):
+                    styles.append(style)
+                else:
+                    styles.append(None)
+            for i, style in enumerate(styles[:len(self.channels)]):
+                self.channels[i].style = style
+        else:
+            for channel in self.channels:
+                channel.style = None
+        self.charter.setChannels(self.channels)
+        return True
+
+    def set_LEGEND(self, args):
+        if len(args):
+            for i, label in enumerate(args[:len(self.channels)]):
+                self.channels[i].name = label
+            self.charter.setChannels(self.channels)
+        else:
+            self.axes.legend_ = None
+        return True
+
+    def cmd_EXIT(self, args):
+        if self.ignoreExit:
+            return False
+
+        app = wx.GetApp()
+        if app is not None:
+            app.ExitMainLoop()
+            self.hasExited = True
+        return False
+
+
+#
+# Channels that calculate their X and Y data from expressions
+#
+
+class ExpressionChannel(wxmpl.Channel):
+    def __init__(self, buffer, xExpr, yExpr, fileDesc):
+        if xExpr is None:
+            label = yExpr
+        else:
+            label = xExpr + ', ' + yExpr
+
+        wxmpl.Channel.__init__(self, label)
+        self.buffer = buffer
+        self.x = None
+        self.y = None
+        self.xExpr = xExpr
+        self.yExpr = yExpr
+        self.fileDesc = fileDesc
+
+    def getX(self):
+        def failure(msg, *args):
+            print >> sys.stderr, (msg % args) ; self.x = None ; return None
+
+        if self.x is not None:
+            return self.x
+
+        if self.xExpr is None:
+            data = self.buffer.getData()
+            if data is not None:
+                self.x = data[:, 0]
+                return self.x
+
+        try:
+            self.x = evaluate_expression(self.xExpr, self.buffer.getData())
+        except Exception, e:
+            return failure('Error evaluating X expression `%s\' for %s: %s',
+                self.xExpr, self.fileDesc, e)
+
+        if (self.x is not None
+        and not isinstance(self.x,
+         (NumPy.ArrayType, NumPy.ma.MaskedArray))):
+            return failure('Error evaluating X expression `%s\' for %s: '
+                'result is not a vector', self.xExpr, self.fileDesc)
+
+        return self.x
+
+    def getY(self):
+        def failure(msg, *args):
+            print >> sys.stderr, (msg % args) ; self.y = None ; return None
+
+        if self.y is not None:
+            return self.y
+
+        try:
+            self.y = evaluate_expression(self.yExpr, self.buffer.getData())
+        except Exception, e:
+            return failure('Error evaluating Y expression `%s\' for %s: %s',
+                self.yExpr, self.fileDesc, e)
+
+        if (self.y is not None
+        and not isinstance(self.y,
+         (NumPy.ArrayType, NumPy.ma.MaskedArray))):
+            return failure('Error evaluating Y expression `%s\' for %s: '
+                'result is not a vector', self.yExpr, self.fileDesc)
+
+        return self.y
+
+    def recalculate(self):
+        self.x = self.y = None
+        self.setChanged(True)
+
+
+#
+# Evaluate X and Y expressions using a file of data
+#
+
+def quickplot_evaluate_file(fileName):
+    def failure(msg, *args):
+        print >> sys.stderr, (msg % args)
+        return None, None
+
+    data, columnNames = load_data(fileName)
+    if data is None:
+        return None, None
+
+    if data.shape[1] == 1:
+        return NumPy.arange(0, data.shape[0], 1, dtype=float), data[:, 0]
+    else:
+        return data[:, 0], data[:, 1]
+
+
+def evaluate_file(fileName, xExpr, yExpr):
+    def failure(msg, *args):
+        print >> sys.stderr, (msg % args)
+        return None, None
+
+    data, columnNames = load_data(fileName)
+    if data is None:
+        return None, None
+
+    try:
+        x = evaluate_expression(xExpr, data, columnNames)
+    except Exception, e:
+        return failure('Error evaluating X for file `%s\': %s', fileName, e)
+
+    try:
+        y = evaluate_expression(yExpr, data, columnNames)
+    except Exception, e:
+        return failure('Error evaluating Y for file `%s\': %s', fileName, e)
+
+    if not isinstance(x, (NumPy.ArrayType, NumPy.ma.MaskedArray)):
+        return failure('Error evaluating X for file `%s\': result is not a '
+            'vector', fileName)
+    elif not isinstance(y, (NumPy.ArrayType, NumPy.ma.MaskedArray)):
+        return failure('Error evaluating Y for file `%s\': result is not a '
+            'vector', fileName)
+
+    if x.shape != y.shape:
+        return failure('BUG? x.shape != y.shape for file `%s\'', fileName)
+
+    return x, y
+
+
+def load_data(fileName):
+    if xdp is not None:
+        try:
+            header, dataset = xdp.io.readFile(fileName)
+        except IOError:
+            pass
+        else:
+            return dataset.getMatrix(), dataset.getColumnNames()
+
+    try:
+        input = file(fileName, 'r')
+    except IOError, e:
+        fatalIOError(e)
+
+    buffer = wxmpl.MatrixBuffer()
+
+    line = input.readline()
+    while line:
+        line = line.strip()
+        if line:
+            _parse_data(buffer, line)
+        line = input.readline()
+
+    input.close()
+    return buffer.getData(), ()
+
+
+def _parse_data(buffer, line):
+    failures = 0
+    values = line.split()
+    data = [0.0] * len(values)
+    for i, point in enumerate(values):
+        try:
+            data[i] = float(point)
+        except Exception, e:
+            if i == 0 and point == 'data':
+                failures += 1
+            else:
+                return
+
+    if failures:
+        buffer.append(data[failures:])
+    else:
+        buffer.append(data)
+
+
+#
+# Evaluating equations against a matrix
+#
+
+def is_plot_expression(string):
+    return (COLNUMS.search(string) is not None
+        or COLNAMES.search(string) is not None
+        or PG_COLNUMS.search(string) is not None)
+
+
+def convert_plotgnu_expression(pgExpr, offset):
+    i = 0
+    expr = ''
+    while 1:
+        m = PG_COLNUMS.search(pgExpr[i:])
+        if m is None:
+            break
+        expr += pgExpr[i:i+m.start()]
+        expr += '$' + str(int(m.group('number'))+offset+1)
+        i += m.end()
+    expr += pgExpr[i:]
+    return expr
+
+
+def evaluate_expression(expr, data, columnNames=()):
+    if data is None:
+        return None
+    elif expr is None:
+        return NumPy.arange(0, data.shape[0], 1, dtype=float)
+
+    columnCount = data.shape[1]
+    namespace = EVAL_NAMESPACE.copy()
+
+    for column, _, number in COLNUMS.findall(expr):
+        number = int(number)
+        if number < 1 or number > columnCount:
+            raise ValueError('invalid column "%s"' % number)
+
+    for column, _, name in COLNAMES.findall(expr):
+        if not columnNames:
+            raise ValueError('column names are unavailable')
+        elif name not in columnNames:
+            raise ValueError('invalid column "%s"' % name)
+
+    expr = COLNUMS.sub('__C_\g<number>', expr)
+    expr = COLNAMES.sub('__C_\g<name>', expr)
+
+    try:
+        code = compile(expr, '<expr>', 'eval')
+    except SyntaxError, e:
+        raise ValueError('incorrect syntax: %s' % e)
+
+    for i in range(0, columnCount):
+        namespace['__C_%d' % (i+1)] = None
+    for i in range(0, min(columnCount, len(columnNames))):
+        namespace['__C_%s' % columnNames[i]] = None
+
+    for var in code.co_names:
+        if not namespace.has_key(var):
+            raise ValueError('invalid variable "%s"' % var)
+
+    # try to evaluate things the fast way
+    # XXX: causes problems with Matplotlib, which chokes on `inf' and `NaN'.
+    for i in range(0, columnCount):
+        namespace['__C_%d' % (i+1)] = data[:, i]
+    for i in range(0, min(columnCount, len(columnNames))):
+        namespace['__C_%s' % columnNames[i]] = data[:, i]
+
+    try:
+        result = eval(code, namespace)
+        return NumPy.ma.masked_outside(result, -1e308, 1e308)
+    except Exception, e:
+        pass
+
+    # evaluate one point at a time if necessary
+    res = NumPy.zeros((data.shape[0],), dtype=float)
+    for i in range(0, data.shape[0]):
+        for j in range(0, columnCount):
+            namespace['__C_%d' % (j+1)] = data[i, j]
+        for j in range(0, min(columnCount, len(columnNames))):
+            namespace['__C_%s' % columnNames[j]] =data[i, j]
+
+        try:
+            res[i] = eval(code, namespace)
+        except Exception, e:
+            pass
+    return res
+
+COLNUMS    = re.compile(r'(?P<column>(\$|\@)(?P<number>\d+))')
+COLNAMES   = re.compile(r'(?P<column>(\$|\@)(?P<name>[a-zA-Z_][a-zA-Z0-9_]*))')
+PG_COLNUMS = re.compile(r'(?P<column>\$f\[(?P<number>\d+)\])')
+
+EVAL_NAMESPACE = {
+    'int': int,
+    'float': float,
+    'complex': complex,
+    'pi': NumPy.pi,
+    'e': NumPy.e,
+    'abs': NumPy.absolute,
+    'arccos': NumPy.arccos,
+    'arccosh': NumPy.arccosh,
+    'arcsin': NumPy.arcsin,
+    'arcsinh': NumPy.arcsinh,
+    'arctan': NumPy.arctan,
+    'arctanh': NumPy.arctanh,
+    'cos': NumPy.cos,
+    'cosh': NumPy.cosh,
+    'exp': NumPy.exp,
+    'log': NumPy.log,
+    'log10': NumPy.log10,
+    'power': NumPy.power,
+    'sin': NumPy.sin,
+    'sinh': NumPy.sinh,
+    'sqrt': NumPy.sqrt,
+    'tan': NumPy.tan,
+    'tanh': NumPy.tanh
+}
+
+
+#
+# Potpourri utility functions
+#
+
+WORD   = r'(\\.)|[^"\'\s]'
+DWORD  = r'(\\.)|[^"\s]'
+SWORD  = r'(\\.)|[^\'\s]'
+DQUOTE = r'%s| |\t' % SWORD
+SQUOTE = r'%s| |\t' % SWORD
+RE_SKIP  = re.compile(r'\s+')
+RE_TOKEN = re.compile(r'(%s)+|("(%s|(\\.))*")|(\'(%s|(\\.))*\')' % (WORD,
+    DQUOTE, SQUOTE))
+
+def tokenize(string, limit=None):
+    tokens = []
+
+    while string:
+        m = RE_SKIP.match(string)
+        if m is not None:
+            string = string[m.end():]
+
+        if not string:
+            break
+
+        if limit is not None and len(tokens) == limit:
+            tokens.append(string)
+            break
+
+        m = RE_TOKEN.match(string)
+
+        if m is None:
+            return None
+
+        tok = string[:m.end()]
+        if tok.startswith('"') or tok.startswith('\''):
+            tok = tok[1:-1]
+        tokens.append(tok)
+        string = string[m.end():]
+
+    return tokens
+
+
+def enumerate(seq):
+    return [(i,seq[i]) for i in range(0, len(seq))]
+
+
+def split_path(fileName):
+    name = os.path.basename(fileName)
+    path = os.path.dirname(os.path.abspath(fileName))
+    user = os.path.expanduser('~')
+    if user != '~':
+        path = path.replace(user, '~')
+    return path, name
+
+
+def cleanup_path(fileName):
+    return os.path.join(*split_path(fileName))
+
+
+def get_frame_title(inputFile):
+    if inputFile is sys.stdin:
+        return 'stdin - PlotIt'
+    else:
+        path, name = split_path(inputFile.name)
+        return (name + ' (' + path + ') - PlotIt')
+
+
+#
+# Command-Line Interface
+#
+
+def fatalError(msg):
+    sys.stderr.write('Error: ')
+    sys.stderr.write(str(msg))
+    sys.stderr.write('\n')
+    sys.exit(1)
+
+
+def fatalIOError(err):
+    if isinstance(err, IOError) and err.strerror and err.filename:
+        err = '%s: %s' % (err.strerror, err.filename)
+    fatalError(err)
+
+
+def ParseArguments(args):
+    from optparse import OptionParser
+
+    USAGE = '''\
+%prog [-w] FILE: execute the commands read from FILE (use `-' for stdin)
+       %prog [-lp] -q FILE [FILE...]:  plot the 1st and 2nd columns of files
+       %prog [-lp] Y FILE [FILE...]:   plot the Y expressions for files
+       %prog [-lp] X Y FILE [FILE...]: plot the X and Y expressions for files
+
+`%prog' is a simple plotting program which can draw line plots and stripcharts
+using a subset of GNUPLOT's command language.  You can also do quick plots of
+multiple data files from the command-line.'''
+    VERSION = '%prog ' + __version__ + ', by Ken McIvor <mcivor@iit.edu>'
+    parser = OptionParser(usage=USAGE, version=VERSION)
+
+    #
+    # Command-line options
+    #
+    parser.add_option('-w',
+        action='store_const',
+        dest='watch',
+        const=True,
+        default=False,
+        help=('watch the input file for commands to stripchart, or wait to '
+            + ' read all of of stdin before plotting'))
+
+    parser.add_option('-q',
+        action='store_const',
+        dest='quick',
+        const=True,
+        default=False,
+        help='plot the first and second columns of multiple files')
+
+    parser.add_option('-l',
+        action='store_const',
+        dest='lines',
+        const=True,
+        default=False,
+        help='plot X and Y with lines')
+
+    parser.add_option('-p',
+        action='store_const',
+        dest='points',
+        const=True,
+        default=False,
+        help='plot X and Y with points')
+
+    opts, args = parser.parse_args(args)
+
+    if (not len(args)
+    or (len(args) == 2
+    and is_plot_expression(args[0])
+    and is_plot_expression(args[1]))):
+        parser.print_usage()
+        sys.exit(1)
+
+    return opts, args
+
+
+#
+# Application entry-point
+#
+
+def main(options, arguments):
+    app = PlotItApp(options, arguments, redirect=0)
+    app.MainLoop()
+    app.cleanup()
+
+
+#
+# Magic incantation to call main() when run as a script
+#
+
+if __name__ == '__main__':
+    try:
+        options, arguments = ParseArguments(sys.argv[1:])
+        main(options, arguments)
+    except KeyboardInterrupt:
+        pass

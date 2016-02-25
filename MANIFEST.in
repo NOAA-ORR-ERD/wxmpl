@@ -1,0 +1,4 @@
+include README.rst LICENSE.txt ChangeLog MANIFEST.in MANIFEST metasetup.py
+include plotit
+recursive-include demos *.py
+recursive-include reference *.html *.txt *.css *.js *.png
