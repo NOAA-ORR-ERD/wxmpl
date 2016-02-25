@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pythonw
 # Purpose: Demonstrates different plots from the matplotlib examples collection
 # Author: Ken McIvor <mcivor@iit.edu>, deriving from the matplotlib examples
 # collection

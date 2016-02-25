@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pythonw
 
 # Name: plotit
 # Purpose: Experiment data visualization
@@ -175,16 +175,18 @@ This program requires matplotlib, Python's 2D plotting library.
 
 try:
     import wxmpl
-except ImportError:
-    if __name__ == '__main__':
+except ImportError as err:
+    if __name__ == '__main__' and "wxmpl" in err.message:
         sys.stderr.write('''\
-This program requires WxMpl, a library for embedding matplotlib in wxPython
-applications.
+    This program requires WxMpl, a library for embedding matplotlib in wxPython
+    applications.
 
-    WxMpl can be downloaded from http://agni.phys.iit.edu/~kmcivor/wxmp/
-''')
+        WxMpl can be downloaded from https://github.com/NOAA-ORR-ERD/wxmpl
+    ''')
         sys.exit(1)
-
+    else:
+        raise
+    
 try:
     import xdp.io # if it's available, use XDP to load data
 except ImportError:

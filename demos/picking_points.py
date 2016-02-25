@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pythonw
 
 # Name: WxMplPoints.py
 # Purpose: Demonstrates point picking in WxMpl

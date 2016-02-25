@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env pythonw
 # Purpose: Demonstrates stripcharting using wxmpl
 # Author: Ken McIvor <mcivor@iit.edu>
 #
