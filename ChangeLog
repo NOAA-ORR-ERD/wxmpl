@@ -1,3 +1,7 @@
+02-25-2016 Chris Barker <Chris.Barker@noaa.gov>
+    * re-structured to have simpler setup.py and stucture
+    * added setuptools to allow develop mode.
+
 10-17-2011  Carlo Segre <segre@iit.edu>
         * Release 2.0.0
         * Replaced all references to numerix with numpy functions
