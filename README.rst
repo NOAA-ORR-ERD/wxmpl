@@ -6,8 +6,8 @@ http://agni.phys.iit.edu/~kmcivor/wxmpl/
 
 Ken has not maintained this for a while, and is no longer at IIT.
 
-WxMpl - Painless matplolib embedding for wxPython
--------------------------------------------------
+WxMpl - Painless matplotlib embedding for wxPython
+--------------------------------------------------
 
 The `wxmpl' module provides an matplotlib `FigureCanvas' with user-interaction
 features like point-under-cursor and zooming in on a selected area.
@@ -24,51 +24,62 @@ subdirectory.
 REQUIREMENTS
 ------------
 
-* Python 2.5 or later
+* Python 2.7 (would like to do a Py3 port, but not yet...)
     http://www.python.org
 
-* wxPython 2.6.3.2 or later
+* wxPython 4.0 or later
     http://www.wxpython.org
 
-* matplotlib 0.98.1 or later
+(It may work with earlier versions, but this is what it was tested on)
+
+* matplotlib 2.1 or later
     http://matplotlib.sourceforge.net
 
+(Also may work for eariler versions, but >= 0.9.8 anyway)
 
 PLATFORMS
 ---------
 
-WxMpl has been tested under Debian GNU/Linux 5.0 "Lenny" [wxPython 2.6.3.2] and Mac OS 10.5.6 [wxPython 2.8.9.1].
+WxMpl has been tested under Windows 10 and Mac OS 10.11 [wxPython 4.0.0].
 
 
 INSTALLATION
 ------------
 
-The Python Distutils system provides packaging, compilation, and installation
+The Python setuptools and pip system provides packaging, compilation, and installation
 for wxmpl.
 
-To install, execute the following command as superuser:
-  # python setup.py install [OPTIONS]
+To install, execute the following command as superuser::
+
+  $ python setup.py install [OPTIONS]
+
+Or:
+
+  $ pip install ./
 
 For more information about installation options, execute the following
 command:
   > python setup.py install --help
 
-For information about other Distutils commands, execute the following command:
+For information about other setuptools commands, execute the following command:
   > python setup.py install --help-commands
 
 
 AVAILABILITY
 ------------
 
-There is no website for WxMpl yet, so your best bet is to bug Ken.
+Project curently being manged on gitHub here:
 
-WxMpl's subversion repository is http://svn.csrri.iit.edu/mr-software/wxmpl/
-
+https://github.com/NOAA-ORR-ERD/wxmpl
 
 AUTHOR
 ------
 
-WxMpl was written by Ken McIvor <mcivor@iit.edu>
+WxMpl was written by: Ken McIvor <mcivor@iit.edu>
+
+Contirbutions from: Carlo Segre <segre@iit.edu>
+
+Currently maintained by: Chris Barker <Chris.Barker@noaa.gov>
 
 
 COPYRIGHT & LICENSE

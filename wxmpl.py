@@ -15,45 +15,35 @@ missing features in the form of a better matplolib FigureCanvas.
 
 
 import wx
-import sys
+import wx.lib.newevent
 import os.path
 import weakref
 
 import matplotlib
-matplotlib.use('WXAgg')
-import numpy as NumPy
+matplotlib.use('WXAgg')  # noqa
+import numpy as np
 from matplotlib.axes._base import _process_plot_var_args
-from matplotlib.backend_bases import FigureCanvasBase
-from matplotlib.backends.backend_agg import FigureCanvasAgg, RendererAgg
+# from matplotlib.backend_bases import FigureCanvasBase
+from matplotlib.backends.backend_agg import RendererAgg
+# from matplotlib.backends.backend_agg import FigureCanvasAgg, RendererAgg
 from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg
 from matplotlib.figure import Figure
 from matplotlib.font_manager import FontProperties
-from matplotlib.projections.polar import PolarAxes
 from matplotlib.transforms import Bbox
 
-__version__ = '2.1.0dev1'
+__version__ = '2.2.0'
 
 __all__ = ['PlotPanel', 'PlotFrame', 'PlotApp', 'StripCharter', 'Channel',
-    'FigurePrinter', 'PointEvent', 'EVT_POINT', 'SelectionEvent',
-    'EVT_SELECTION']
+           'FigurePrinter', 'PointEvent', 'EVT_POINT', 'SelectionEvent',
+           'EVT_SELECTION']
 
 # If you are using wxGtk without libgnomeprint and want to use something other
 # than `lpr' to print you will have to specify that command here.
 POSTSCRIPT_PRINTING_COMMAND = 'lpr'
 
-# Between 0.98.1 and 0.98.3rc there were some significant API changes:
-#   * FigureCanvasWx.draw(repaint=True) became draw(drawDC=None)
-#   * The following events were added:
-#       - figure_enter_event
-#       - figure_leave_event
-#       - axes_enter_event
-#       - axes_leave_event
-MATPLOTLIB_0_98_3 = '0.98.3' <= matplotlib.__version__
-
-
 #
 # Utility functions and classes
-#
+
 
 def invert_point(x, y, transform):
     """
@@ -152,10 +142,11 @@ def toplevel_parent_of_window(window):
     """
     Returns the first top-level parent of a wx.Window
     """
-    topwin = window
-    while not isinstance(topwin, wx.TopLevelWindow):
-        topwin = topwin.GetParent()
-    return topwin       
+    topwin = wx.GetTopLevelParent(window)
+    if topwin is None:
+        return window
+    else:
+        return topwin
 
 
 class AxesLimits:
@@ -525,7 +516,6 @@ class Painter:
         dc.SetTextForeground(self.TEXT_FOREGROUND)
         dc.SetTextBackground(self.TEXT_BACKGROUND)
         dc.SetLogicalFunction(self.FUNCTION)
-        dc.BeginDrawing()
 
         if self.lastValue is not None:
             self.clearValue(dc, self.lastValue)
@@ -535,8 +525,6 @@ class Painter:
             self.drawValue(dc, value)
             self.lastValue = value
 
-        dc.EndDrawing()
-
     def formatValue(self, value):
         """
         Template method that processes the C{value} tuple passed to the
@@ -545,6 +533,7 @@ class Painter:
         return value
 
     def drawValue(self, dc, value):
+        # fixme -- BeginDrawing and EndDrawing no longer exist -- this still needed?
         """
         Template method that draws a previously processed C{value} using the
         wxPython device context C{dc}.  This DC has already been configured, so
@@ -553,6 +542,7 @@ class Painter:
         pass
 
     def clearValue(self, dc, value):
+        # fixme -- BeginDrawing and EndDrawing no longer exist -- this still needed?
         """
         Template method that clears a previously processed C{value} that was
         previously drawn, using the wxPython device context C{dc}.  This DC has
@@ -752,7 +742,7 @@ def update_postscript_resolution(printData):
         dpi = PS_DPI_DRAFT_QUALITY
     else:
         dpi = PS_DPI_HIGH_QUALITY
- 
+
     wx.PostScriptDC_SetResolution(dpi)
 
 
@@ -992,20 +982,37 @@ class FigurePrintout(wx.Printout):
         image.SetData(agg.tostring_rgb())
         return image
 
+# wxPython event emitted when a left-click-release occurs in a matplotlib
+# axes of a window without an area selection.
+#
+# When created, it should be called with the following keyword arguments:
+#   axes: matplotlib Axes which was left-clicked
+#   x: matplotlib X coordinate
+#   y: matplotlib Y coordinate
+#     @cvar xdata: axes X coordinate
+#     @cvar ydata: axes Y coordinate
+
+# The "new", easy way -- but I keep getting and error trying to use it :-()
+# PointEvent, EVT_POINT = wx.lib.newevent.NewEvent()
+# PointEvent, EVT_POINT = wx.lib.newevent.NewCommandEvent()
 
 #
 # wxPython event interface for the PlotPanel and PlotFrame
 #
 
+# EVT_POINT_ID = wx.NewId()
+
+
+# # def EVT_POINT(win, id, func):
+# #     # fixme: Is this the right way to do it -- can we Bind() instead???
+# #     """
+# #     Register to receive wxPython C{PointEvent}s from a C{PlotPanel} or
+# #     C{PlotFrame}.
+# #     """
+# #     win.Connect(id, -1, EVT_POINT_ID, func)
+
+
 EVT_POINT_ID = wx.NewId()
-
-
-def EVT_POINT(win, id, func):
-    """
-    Register to receive wxPython C{PointEvent}s from a C{PlotPanel} or
-    C{PlotFrame}.
-    """
-    win.Connect(id, -1, EVT_POINT_ID, func)
 
 
 class PointEvent(wx.PyCommandEvent):
@@ -1032,6 +1039,16 @@ class PointEvent(wx.PyCommandEvent):
 
     def Clone(self):
         return PointEvent(self.GetId(), self.axes, self.x, self.y)
+
+
+# EVT_POINT = wx.PyEventBinder(PointEvent)
+
+def EVT_POINT(win, id, func):
+    """
+    Register to receive wxPython C{SelectionEvent}s from a C{PlotPanel} or
+    C{PlotFrame}.
+    """
+    win.Connect(id, -1, EVT_POINT_ID, func)
 
 
 EVT_SELECTION_ID = wx.NewId()
@@ -1089,9 +1106,17 @@ class PlotPanel(FigureCanvasWxAgg):
     """
     A matplotlib canvas suitable for embedding in wxPython applications.
     """
-    def __init__(self, parent, id, size=(6.0, 3.70), dpi=96, cursor=True,
-     location=True, crosshairs=True, selection=True, zoom=True,
-     autoscaleUnzoom=True):
+    def __init__(self,
+                 parent,
+                 id=wx.ID_ANY,
+                 size=(6.0, 3.70),
+                 dpi=96,
+                 cursor=True,
+                 location=True,
+                 crosshairs=True,
+                 selection=True,
+                 zoom=True,
+                 autoscaleUnzoom=True):
         """
         Creates a new PlotPanel window that is the child of the wxPython window
         C{parent} with the wxPython identifier C{id}.
@@ -1113,9 +1138,12 @@ class PlotPanel(FigureCanvasWxAgg):
         self.location = LocationPainter(self, location)
         self.crosshairs = CrosshairPainter(self, crosshairs)
         self.rubberband = RubberbandPainter(self, selection)
-        rightClickUnzoom = True # for now this is default behavior
-        self.director = PlotPanelDirector(self, zoom, selection,
-            rightClickUnzoom, autoscaleUnzoom)
+        rightClickUnzoom = True  # for now this is default behavior
+        self.director = PlotPanelDirector(self,
+                                          zoom,
+                                          selection,
+                                          rightClickUnzoom,
+                                          autoscaleUnzoom)
 
         self.figure.set_edgecolor('black')
         self.figure.set_facecolor('white')
@@ -1124,10 +1152,11 @@ class PlotPanel(FigureCanvasWxAgg):
         # find the toplevel parent window and register an activation event
         # handler that is keyed to the id of this PlotPanel
         topwin = toplevel_parent_of_window(self)
-        topwin.Connect(-1, self.GetId(), wx.wxEVT_ACTIVATE, self.OnActivate)
+        topwin.Bind(wx.EVT_ACTIVATE, self.OnActivate)
+        # topwin.Connect(wx.ID_ANY, self.GetId(), wx.wxEVT_ACTIVATE, self.OnActivate)
 
-        wx.EVT_ERASE_BACKGROUND(self, self.OnEraseBackground)
-        wx.EVT_WINDOW_DESTROY(self, self.OnDestroy)
+        self.Bind(wx.EVT_ERASE_BACKGROUND, self.OnEraseBackground)
+        self.Bind(wx.EVT_WINDOW_DESTROY, self.OnDestroy)
 
     def OnActivate(self, evt):
         """
@@ -1150,7 +1179,8 @@ class PlotPanel(FigureCanvasWxAgg):
         """
         Handles the wxPython window destruction event.
         """
-        if self.GetId() == evt.GetEventObject().GetId():
+        # fixme: is this necessary at all?
+        if self.Id == evt.EventObject.Id:
             # unregister the activation event handler for this PlotPanel
             topwin = toplevel_parent_of_window(self)
             topwin.Disconnect(-1, self.GetId(), wx.wxEVT_ACTIVATE)
@@ -1229,20 +1259,16 @@ class PlotPanel(FigureCanvasWxAgg):
         """
         return self.director.zoomed(axes)
 
-    def draw(self, **kwds):
+    def draw(self, **kwargs):
         """
         Draw the associated C{Figure} onto the screen.
         """
         # don't redraw if the left mouse button is down and avoid
         # wxPyDeadObject errors
-        if (not self.director.canDraw()
-        or  not isinstance(self, FigureCanvasWxAgg)):
+        if (not self.director.canDraw() or not isinstance(self, FigureCanvasWxAgg)):
             return
 
-        if MATPLOTLIB_0_98_3:
-            FigureCanvasWxAgg.draw(self, kwds.get('drawDC', None))
-        else:
-            FigureCanvasWxAgg.draw(self, kwds.get('repaint', True))
+        FigureCanvasWxAgg.draw(self, kwargs.get('drawDC', None))
 
         # Don't redraw the decorations when called by _onPaint()
         if not self.insideOnPaint:
@@ -1254,7 +1280,9 @@ class PlotPanel(FigureCanvasWxAgg):
         """
         Called by the associated C{PlotPanelDirector} to emit a C{PointEvent}.
         """
-        wx.PostEvent(self, PointEvent(self.GetId(), axes, x, y))
+        # xdata, ydata = invert_point(x, y, axes.transData)
+        evt = PointEvent(self.GetId(), axes, x, y)
+        wx.PostEvent(self, evt)
 
     def notify_selection(self, axes, x1, y1, x2, y2):
         """
@@ -1283,7 +1311,7 @@ class PlotPanel(FigureCanvasWxAgg):
         dispatching the event to the associated C{PlotPanelDirector}.
         """
         self.director.keyUp(evt)
- 
+
     def _onLeftButtonDown(self, evt):
         """
         Overrides the C{FigureCanvasWxAgg} left-click event handler,
@@ -1338,13 +1366,23 @@ class PlotFrame(wx.Frame):
     """
 
     ABOUT_TITLE = 'About wxmpl.PlotFrame'
-    ABOUT_MESSAGE = ('wxmpl.PlotFrame %s\n' %  __version__
-        + 'Written by Ken McIvor <mcivor@iit.edu>\n'
-        + 'Copyright 2005-2009 Illinois Institute of Technology')
+    ABOUT_MESSAGE = ('wxmpl.PlotFrame %s\n'
+                     'Written by Ken McIvor <mcivor@iit.edu>\n'
+                     'Copyright 2005-2009 Illinois Institute of Technology' % __version__)
 
-    def __init__(self, parent, id, title, size=(6.0, 3.7), dpi=96, cursor=True,
-     location=True, crosshairs=True, selection=True, zoom=True,
-     autoscaleUnzoom=True, **kwds):
+    def __init__(self,
+                 parent,
+                 id=wx.ID_ANY,
+                 title="wxmpl.PlotFrame",
+                 size=(6.0, 3.7),
+                 dpi=96,
+                 cursor=True,
+                 location=True,
+                 crosshairs=True,
+                 selection=True,
+                 zoom=True,
+                 autoscaleUnzoom=True,
+                 **kwargs):
         """
         Creates a new PlotFrame top-level window that is the child of the
         wxPython window C{parent} with the wxPython identifier C{id} and the
@@ -1356,9 +1394,17 @@ class PlotFrame(wx.Frame):
         Any additional keyword arguments are passed to the constructor of
         C{wx.Frame}.
         """
-        wx.Frame.__init__(self, parent, id, title, **kwds)
-        self.panel = PlotPanel(self, -1, size, dpi, cursor, location,
-            crosshairs, selection, zoom)
+        wx.Frame.__init__(self, parent, id, title, **kwargs)
+
+        self.panel = PlotPanel(self,
+                               wx.ID_ANY,
+                               size,
+                               dpi,
+                               cursor,
+                               location,
+                               crosshairs,
+                               selection,
+                               zoom)
 
         pData = wx.PrintData()
         pData.SetPaperId(wx.PAPER_LETTER)
@@ -1368,7 +1414,7 @@ class PlotFrame(wx.Frame):
 
         self.create_menus()
         sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.panel, 1, wx.ALL|wx.EXPAND, 5)
+        sizer.Add(self.panel, 1, wx.ALL | wx.EXPAND, 5)
         self.SetSizer(sizer)
         self.Fit()
 
@@ -1376,41 +1422,38 @@ class PlotFrame(wx.Frame):
         mainMenu = wx.MenuBar()
         menu = wx.Menu()
 
-        id = wx.NewId()
-        menu.Append(id, '&Save As...\tCtrl+S',
-            'Save a copy of the current plot')
-        wx.EVT_MENU(self, id, self.OnMenuFileSave)
+        menu_item = menu.Append(wx.ID_ANY,
+                                '&Save As...\tCtrl+S',
+                                'Save a copy of the current plot')
+        self.Bind(wx.EVT_MENU, self.OnMenuFileSave, menu_item)
 
         menu.AppendSeparator()
 
         if wx.Platform != '__WXMAC__':
-            id = wx.NewId()
-            menu.Append(id, 'Page Set&up...',
-                'Set the size and margins of the printed figure')
-            wx.EVT_MENU(self, id, self.OnMenuFilePageSetup)
+            menu_item = menu.Append(wx.ID_ANY,
+                                    'Page Set&up...',
+                                    'Set the size and margins of the printed figure')
+            self.Bind(wx.EVT_MENU, self.OnMenuFilePageSetup, menu_item)
 
-            id = wx.NewId()
-            menu.Append(id, 'Print Pre&view...',
-                'Preview the print version of the current plot')
-            wx.EVT_MENU(self, id, self.OnMenuFilePrintPreview)
+            menu_item = menu.Append(wx.ID_ANY,
+                                    'Print Pre&view...',
+                                    'Preview the print version of the current plot')
+            self.Bind(wx.EVT_MENU, self.OnMenuFilePrintPreview, menu_item)
 
-        id = wx.NewId()
-        menu.Append(id, '&Print...\tCtrl+P', 'Print the current plot')
-        wx.EVT_MENU(self, id, self.OnMenuFilePrint)
+        menu_item = menu.Append(wx.ID_ANY, '&Print...\tCtrl+P', 'Print the current plot')
+        self.Bind(wx.EVT_MENU, self.OnMenuFilePrint, menu_item)
 
         menu.AppendSeparator()
 
-        id = wx.NewId()
-        menu.Append(id, '&Close Window\tCtrl+W',
-            'Close the current plot window')
-        wx.EVT_MENU(self, id, self.OnMenuFileClose)
+        menu_item = menu.Append(wx.ID_ANY, '&Close Window\tCtrl+W',
+                                'Close the current plot window')
+        self.Bind(wx.EVT_MENU, self.OnMenuFileClose, menu_item)
 
         mainMenu.Append(menu, '&File')
         menu = wx.Menu()
 
-        id = wx.NewId()
-        menu.Append(id, '&About...', 'Display version information')
-        wx.EVT_MENU(self, id, self.OnMenuHelpAbout)
+        menu_item = menu.Append(wx.ID_ANY, '&About...', 'Display version information')
+        self.Bind(wx.EVT_MENU, self.OnMenuHelpAbout, menu_item)
 
         mainMenu.Append(menu, '&Help')
         self.SetMenuBar(mainMenu)
@@ -1553,7 +1596,7 @@ class PlotApp(wx.App):
     ABOUT_MESSAGE = None
 
     def __init__(self, title="WxMpl", size=(6.0, 3.7), dpi=96, cursor=True,
-     location=True, crosshairs=True, selection=True, zoom=True, **kwds):
+     location=True, crosshairs=True, selection=True, zoom=True, **kwargs):
         """
         Creates a new PlotApp, which creates a PlotFrame top-level window.
 
@@ -1574,7 +1617,7 @@ class PlotApp(wx.App):
         self.crosshairs = crosshairs
         self.selection = selection
         self.zoom = zoom
-        wx.App.__init__(self, **kwds)
+        wx.App.__init__(self, **kwargs)
 
     def OnInit(self):
         self.frame = panel = PlotFrame(None, -1, self.title, self.size,
@@ -1649,7 +1692,7 @@ class VectorBuffer:
     accomodate new entries.
     """
     def __init__(self):
-        self.data = NumPy.zeros((16,), dtype=float)
+        self.data = np.zeros((16,), dtype=float)
         self.nextRow = 0
 
     def clear(self):
@@ -1663,7 +1706,7 @@ class VectorBuffer:
         """
         Zero and reset this buffer, releasing the underlying array.
         """
-        self.data = NumPy.zeros((16,), dtype=float)
+        self.data = np.zeros((16,), dtype=float)
         self.nextRow = 0
 
     def append(self, point):
@@ -1675,11 +1718,11 @@ class VectorBuffer:
 
         resize = False
         if nextRow == data.shape[0]:
-            nR = int(NumPy.ceil(self.data.shape[0]*1.5))
+            nR = int(np.ceil(self.data.shape[0]*1.5))
             resize = True
 
         if resize:
-            self.data = NumPy.zeros((nR,), dtype=float)
+            self.data = np.zeros((nR,), dtype=float)
             self.data[0:data.shape[0]] = data
 
         self.data[nextRow] = point
@@ -1701,7 +1744,7 @@ class MatrixBuffer:
     accomodate new rows of entries.
     """
     def __init__(self):
-        self.data = NumPy.zeros((16, 1), dtype=float)
+        self.data = np.zeros((16, 1), dtype=float)
         self.nextRow = 0
 
     def clear(self):
@@ -1715,14 +1758,14 @@ class MatrixBuffer:
         """
         Zero and reset this buffer, releasing the underlying array.
         """
-        self.data = NumPy.zeros((16, 1), dtype=float)
+        self.data = np.zeros((16, 1), dtype=float)
         self.nextRow = 0
 
     def append(self, row):
         """
         Append a new row of entries to the end of this buffer's matrix.
         """
-        row = NumPy.asarray(row, dtype=float)
+        row = np.asarray(row, dtype=float)
         nextRow = self.nextRow
         data = self.data
         nPts = row.shape[0]
@@ -1733,7 +1776,7 @@ class MatrixBuffer:
         resize = True
         if nextRow == data.shape[0]:
             nC = data.shape[1]
-            nR = int(NumPy.ceil(self.data.shape[0]*1.5))
+            nR = int(np.ceil(self.data.shape[0]*1.5))
             if nC < nPts:
                 nC = nPts
         elif data.shape[1] < nPts:
@@ -1743,7 +1786,7 @@ class MatrixBuffer:
             resize = False
 
         if resize:
-            self.data = NumPy.zeros((nR, nC), dtype=float)
+            self.data = np.zeros((nR, nC), dtype=float)
             rowEnd, colEnd = data.shape
             self.data[0:rowEnd, 0:colEnd] = data
 
@@ -1935,9 +1978,9 @@ class StripCharter:
                 xys = axes._get_verts_in_data_coords(
                     line.get_transform(), zip(x, y))
             else:
-                xys = NumPy.zeros((x.shape[0], 2), dtype=float)
-                xys[:,0] = x
-                xys[:,1] = y
+                xys = np.zeros((x.shape[0], 2), dtype=float)
+                xys[:, 0] = x
+                xys[:, 1] = y
             axes.update_datalim(xys)
 
         if zoomed:

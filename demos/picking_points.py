@@ -18,7 +18,7 @@ import matplotlib.patches
 
 class MyApp(wx.App):
     def OnInit(self):
-        self.frame = panel = MyFrame(None, -1, 'Point Picker')
+        self.frame = MyFrame(None, -1, 'Point Picker')
         self.frame.Show(True)
         return True
 
@@ -31,12 +31,13 @@ class MyFrame(wx.Frame):
         self.selectionPoints = []
         self.plotPanel = wxmpl.PlotPanel(self, -1)
         self.regionButton = wx.ToggleButton(self, -1, 'Pick Region')
-        self.pointButton  = wx.ToggleButton(self, -1, 'Pick Point')
+        self.pointButton = wx.ToggleButton(self, -1, 'Pick Point')
 
-        wx.EVT_TOGGLEBUTTON(self, self.regionButton.GetId(),
-            self._on_regionButton)
+        self.Bind(wx.EVT_TOGGLEBUTTON, self._on_regionButton, self.regionButton)
 
-        wxmpl.EVT_POINT(self,     self.plotPanel.GetId(), self._on_point)
+        # self.Bind(wxmpl.EVT_POINT, self._on_point, self.plotPanel)
+        wxmpl.EVT_POINT(self, self.plotPanel.GetId(), self._on_point)
+
         wxmpl.EVT_SELECTION(self, self.plotPanel.GetId(), self._on_selection)
 
         self._layout()
@@ -46,12 +47,12 @@ class MyFrame(wx.Frame):
         btnSizer = wx.BoxSizer(wx.HORIZONTAL)
         btnSizer.Add((1, 1), 1, 0, 0)
         btnSizer.Add(self.regionButton, 0, wx.RIGHT, 5)
-        btnSizer.Add(self.pointButton,  0)
+        btnSizer.Add(self.pointButton, 0)
         btnSizer.Add((20, 1), 0, 0, 0)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
         sizer.Add(self.plotPanel, 1, wx.EXPAND, 5)
-        sizer.Add(btnSizer, 0, wx.ALIGN_RIGHT|wx.ALL, 5)
+        sizer.Add(btnSizer, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
 
         self.SetSizer(sizer)
         self.Fit()
@@ -116,10 +117,11 @@ class MyFrame(wx.Frame):
         x1, y1 = evt.x1data, evt.y1data
         x2, y2 = evt.x2data, evt.y2data
 
-        self.selectionPoints.append(((x1, y1), x2-x1, y2-y1))
+        self.selectionPoints.append(((x1, y1), x2 - x1, y2 - y1))
         self._replot()
 
     def _on_point(self, evt):
+        print "in _on_point", evt
         if self.pointButton.GetValue():
             self.pointButton.SetValue(False)
             if evt.axes is not None:

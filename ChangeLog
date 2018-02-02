@@ -1,4 +1,9 @@
 02-25-2016 Chris Barker <Chris.Barker@noaa.gov>
+    * Release 2.2.0
+    * Assorted updated for wxPython >= 4.0
+    * Other updated for modern MPL (tested on '2.1.2')
+
+02-25-2016 Chris Barker <Chris.Barker@noaa.gov>
     * re-structured to have simpler setup.py and stucture
     * added setuptools to allow develop mode.
 
