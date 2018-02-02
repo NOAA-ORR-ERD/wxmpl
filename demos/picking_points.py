@@ -12,11 +12,12 @@
 
 import wx
 import wxmpl
-import numpy as NumPy
+import numpy as np
 import matplotlib.patches
 
 
 class MyApp(wx.App):
+
     def OnInit(self):
         self.frame = MyFrame(None, -1, 'Point Picker')
         self.frame.Show(True)
@@ -24,6 +25,7 @@ class MyApp(wx.App):
 
 
 class MyFrame(wx.Frame):
+
     def __init__(self, parent, id, title, **kwds):
         wx.Frame.__init__(self, parent, id, title, **kwds)
 
@@ -33,12 +35,15 @@ class MyFrame(wx.Frame):
         self.regionButton = wx.ToggleButton(self, -1, 'Pick Region')
         self.pointButton = wx.ToggleButton(self, -1, 'Pick Point')
 
-        self.Bind(wx.EVT_TOGGLEBUTTON, self._on_regionButton, self.regionButton)
+        self.Bind(wx.EVT_TOGGLEBUTTON,
+                  self._on_regionButton, self.regionButton)
 
-        # self.Bind(wxmpl.EVT_POINT, self._on_point, self.plotPanel)
-        wxmpl.EVT_POINT(self, self.plotPanel.GetId(), self._on_point)
+        self.Bind(wxmpl.EVT_POINT, self._on_point, self.plotPanel)
+        # wxmpl.EVT_POINT(self, self.plotPanel.GetId(), self._on_point)
 
-        wxmpl.EVT_SELECTION(self, self.plotPanel.GetId(), self._on_selection)
+        self.Bind(wxmpl.EVT_SELECTION, self._on_selection, self.plotPanel)
+
+        # wxmpl.EVT_SELECTION(self, self.plotPanel.GetId(), self._on_selection)
 
         self._layout()
         self._replot()
@@ -58,9 +63,9 @@ class MyFrame(wx.Frame):
         self.Fit()
 
     def _replot(self):
-        PI = NumPy.pi
-        t = NumPy.arange(0.0, 2.0, 0.01)
-        s = NumPy.sin(2*PI*t)
+        PI = np.pi
+        t = np.arange(0.0, 2.0, 0.01)
+        s = np.sin(2 * PI * t)
 
         fig = self.plotPanel.get_figure()
         axes = fig.gca()
@@ -77,18 +82,18 @@ class MyFrame(wx.Frame):
         # plot the selected regions as rectangles
         for (xy, w, h) in self.selectionPoints:
             sel = matplotlib.patches.Rectangle(xy, w, h, edgecolor='k',
-                    facecolor='r', label='_nolegend_', alpha=0.25)
+                                               facecolor='r', label='_nolegend_', alpha=0.25)
             axes.add_patch(sel)
 
         # plot the points
         if self.points:
-            pts  = NumPy.array(self.points)
-            ptsY = NumPy.cos(2*PI*pts)
+            pts = np.array(self.points)
+            ptsY = np.cos(2 * PI * pts)
             axes.plot(pts, ptsY, 'go', markersize=5, label='pts')
 
             if 1 < len(self.points):
-                rng  = NumPy.arange(min(self.points), max(self.points), 0.01)
-                rngY = NumPy.cos(2*PI*rng)
+                rng = np.arange(min(self.points), max(self.points), 0.01)
+                rngY = np.cos(2 * PI * rng)
                 axes.plot(rng, rngY, 'g-', linewidth=1,  label='cos')
 
         axes.set_xlabel('time (s)')
@@ -111,6 +116,8 @@ class MyFrame(wx.Frame):
             self.plotPanel.set_zoom(True)
 
     def _on_selection(self, evt):
+        # print "in _on_selection"
+        # print evt.x1data, evt.y1data, evt.x2data, evt.y2data
         self.plotPanel.set_zoom(True)
         self.regionButton.SetValue(False)
 
@@ -121,7 +128,8 @@ class MyFrame(wx.Frame):
         self._replot()
 
     def _on_point(self, evt):
-        print "in _on_point", evt
+        # print "in _on_point", evt,
+        # print evt.xdata, evt.ydata
         if self.pointButton.GetValue():
             self.pointButton.SetValue(False)
             if evt.axes is not None:
@@ -131,7 +139,7 @@ class MyFrame(wx.Frame):
 
 #app = wxmpl.PlotApp()
 #figure = app.get_figure()
-#plot_simple(figure)
+# plot_simple(figure)
 
 app = MyApp(False)
 app.MainLoop()

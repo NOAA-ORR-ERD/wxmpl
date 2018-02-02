@@ -368,8 +368,10 @@ class PlotPanelDirector:
         """
         view = self.view
         axes, xdata, ydata = find_axes(view, x, y)
-        if (axes is not None and self.zoomEnabled and self.rightClickUnzoom
-        and self.limits.restore(axes)):
+        if (axes is not None
+                and self.zoomEnabled
+                and self.rightClickUnzoom
+                and self.limits.restore(axes)):
             view.crosshairs.clear()
             view.draw()
             view.crosshairs.set(x, y)
@@ -994,7 +996,8 @@ class FigurePrintout(wx.Printout):
 
 # The "new", easy way -- but I keep getting and error trying to use it :-()
 # PointEvent, EVT_POINT = wx.lib.newevent.NewEvent()
-# PointEvent, EVT_POINT = wx.lib.newevent.NewCommandEvent()
+PointEvent, EVT_POINT = wx.lib.newevent.NewCommandEvent()
+
 
 #
 # wxPython event interface for the PlotPanel and PlotFrame
@@ -1012,90 +1015,92 @@ class FigurePrintout(wx.Printout):
 # #     win.Connect(id, -1, EVT_POINT_ID, func)
 
 
-EVT_POINT_ID = wx.NewId()
+# EVT_POINT_ID = wx.NewId()
 
 
-class PointEvent(wx.PyCommandEvent):
-    """
-    wxPython event emitted when a left-click-release occurs in a matplotlib
-    axes of a window without an area selection.
+# class PointEvent(wx.PyCommandEvent):
+#     """
+#     wxPython event emitted when a left-click-release occurs in a matplotlib
+#     axes of a window without an area selection.
 
-    @cvar axes: matplotlib C{Axes} which was left-clicked
-    @cvar x: matplotlib X coordinate
-    @cvar y: matplotlib Y coordinate
-    @cvar xdata: axes X coordinate
-    @cvar ydata: axes Y coordinate
-    """
-    def __init__(self, id, axes, x, y):
-        """
-        Create a new C{PointEvent} for the matplotlib coordinates C{(x, y)} of
-        an C{axes}.
-        """
-        wx.PyCommandEvent.__init__(self, EVT_POINT_ID, id)
-        self.axes = axes
-        self.x = x
-        self.y = y
-        self.xdata, self.ydata = invert_point(x, y, axes.transData)
+#     @cvar axes: matplotlib C{Axes} which was left-clicked
+#     @cvar x: matplotlib X coordinate
+#     @cvar y: matplotlib Y coordinate
+#     @cvar xdata: axes X coordinate
+#     @cvar ydata: axes Y coordinate
+#     """
+#     def __init__(self, id, axes, x, y):
+#         """
+#         Create a new C{PointEvent} for the matplotlib coordinates C{(x, y)} of
+#         an C{axes}.
+#         """
+#         wx.PyCommandEvent.__init__(self, EVT_POINT_ID, id)
+#         self.axes = axes
+#         self.x = x
+#         self.y = y
+#         self.xdata, self.ydata = invert_point(x, y, axes.transData)
 
-    def Clone(self):
-        return PointEvent(self.GetId(), self.axes, self.x, self.y)
-
-
-# EVT_POINT = wx.PyEventBinder(PointEvent)
-
-def EVT_POINT(win, id, func):
-    """
-    Register to receive wxPython C{SelectionEvent}s from a C{PlotPanel} or
-    C{PlotFrame}.
-    """
-    win.Connect(id, -1, EVT_POINT_ID, func)
+#     def Clone(self):
+#         return PointEvent(self.GetId(), self.axes, self.x, self.y)
 
 
-EVT_SELECTION_ID = wx.NewId()
+# # EVT_POINT = wx.PyEventBinder(PointEvent)
+
+# def EVT_POINT(win, id, func):
+#     """
+#     Register to receive wxPython C{SelectionEvent}s from a C{PlotPanel} or
+#     C{PlotFrame}.
+#     """
+#     win.Connect(id, -1, EVT_POINT_ID, func)
 
 
-def EVT_SELECTION(win, id, func):
-    """
-    Register to receive wxPython C{SelectionEvent}s from a C{PlotPanel} or
-    C{PlotFrame}.
-    """
-    win.Connect(id, -1, EVT_SELECTION_ID, func)
+# EVT_SELECTION_ID = wx.NewId()
 
 
-class SelectionEvent(wx.PyCommandEvent):
-    """
-    wxPython event emitted when an area selection occurs in a matplotlib axes
-    of a window for which zooming has been disabled.  The selection is
-    described by a rectangle from C{(x1, y1)} to C{(x2, y2)}, of which only
-    one point is required to be inside the axes.
+# def EVT_SELECTION(win, id, func):
+#     """
+#     Register to receive wxPython C{SelectionEvent}s from a C{PlotPanel} or
+#     C{PlotFrame}.
+#     """
+#     win.Connect(id, -1, EVT_SELECTION_ID, func)
 
-    @cvar axes: matplotlib C{Axes} which was left-clicked
-    @cvar x1: matplotlib x1 coordinate
-    @cvar y1: matplotlib y1 coordinate
-    @cvar x2: matplotlib x2 coordinate
-    @cvar y2: matplotlib y2 coordinate
-    @cvar x1data: axes x1 coordinate
-    @cvar y1data: axes y1 coordinate
-    @cvar x2data: axes x2 coordinate
-    @cvar y2data: axes y2 coordinate
-    """
-    def __init__(self, id, axes, x1, y1, x2, y2):
-        """
-        Create a new C{SelectionEvent} for the area described by the rectangle
-        from C{(x1, y1)} to C{(x2, y2)} in an C{axes}.
-        """
-        wx.PyCommandEvent.__init__(self, EVT_SELECTION_ID, id)
-        self.axes = axes
-        self.x1 = x1
-        self.y1 = y1
-        self.x2 = x2
-        self.y2 = y2
-        self.x1data, self.y1data = invert_point(x1, y1, axes.transData)
-        self.x2data, self.y2data = invert_point(x2, y2, axes.transData)
 
-    def Clone(self):
-        return SelectionEvent(self.GetId(), self.axes, self.x1, self.y1,
-            self.x2, self.y2)
+# class SelectionEvent(wx.PyCommandEvent):
+#     """
+#     wxPython event emitted when an area selection occurs in a matplotlib axes
+#     of a window for which zooming has been disabled.  The selection is
+#     described by a rectangle from C{(x1, y1)} to C{(x2, y2)}, of which only
+#     one point is required to be inside the axes.
+
+#     @cvar axes: matplotlib C{Axes} which was left-clicked
+#     @cvar x1: matplotlib x1 coordinate
+#     @cvar y1: matplotlib y1 coordinate
+#     @cvar x2: matplotlib x2 coordinate
+#     @cvar y2: matplotlib y2 coordinate
+#     @cvar x1data: axes x1 coordinate
+#     @cvar y1data: axes y1 coordinate
+#     @cvar x2data: axes x2 coordinate
+#     @cvar y2data: axes y2 coordinate
+#     """
+#     def __init__(self, id, axes, x1, y1, x2, y2):
+#         """
+#         Create a new C{SelectionEvent} for the area described by the rectangle
+#         from C{(x1, y1)} to C{(x2, y2)} in an C{axes}.
+#         """
+#         wx.PyCommandEvent.__init__(self, EVT_SELECTION_ID, id)
+#         self.axes = axes
+#         self.x1 = x1
+#         self.y1 = y1
+#         self.x2 = x2
+#         self.y2 = y2
+#         self.x1data, self.y1data = invert_point(x1, y1, axes.transData)
+#         self.x2data, self.y2data = invert_point(x2, y2, axes.transData)
+
+#     def Clone(self):
+#         return SelectionEvent(self.GetId(), self.axes, self.x1, self.y1,
+#             self.x2, self.y2)
+
+SelectionEvent, EVT_SELECTION = wx.lib.newevent.NewCommandEvent()
 
 
 #
@@ -1280,8 +1285,9 @@ class PlotPanel(FigureCanvasWxAgg):
         """
         Called by the associated C{PlotPanelDirector} to emit a C{PointEvent}.
         """
-        # xdata, ydata = invert_point(x, y, axes.transData)
-        evt = PointEvent(self.GetId(), axes, x, y)
+        xdata, ydata = invert_point(x, y, axes.transData)
+        evt = PointEvent(self.Id, axes=axes, x=x, y=x, xdata=xdata, ydata=ydata)
+        # evt = PointEvent(self.GetId(), axes, x, y)
         wx.PostEvent(self, evt)
 
     def notify_selection(self, axes, x1, y1, x2, y2):
@@ -1289,7 +1295,22 @@ class PlotPanel(FigureCanvasWxAgg):
         Called by the associated C{PlotPanelDirector} to emit a
         C{SelectionEvent}.
         """
-        wx.PostEvent(self, SelectionEvent(self.GetId(), axes, x1, y1, x2, y2))
+        #         self.axes = axes
+#         self.x1 = x1
+#         self.y1 = y1
+#         self.x2 = x2
+#         self.y2 = y2
+        x1data, y1data = invert_point(x1, y1, axes.transData)
+        x2data, y2data = invert_point(x2, y2, axes.transData)
+        SelectionEvent(self.GetId(),
+                       axes=axes,
+                       x1=x1, y1=y1,
+                       x2=x2, y2=y2,
+                       x1data=x1data, y1data=y1data,
+                       x2data=x2data, y2data=y2data,
+                       )
+
+#        wx.PostEvent(self, SelectionEvent(self.GetId(), axes, x1, y1, x2, y2))
 
     def _get_canvas_xy(self, evt):
         """

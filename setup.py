@@ -35,6 +35,7 @@ def extract_version(module='wxmpl.py'):
                 break
     return version
 
+
 setup(
     name='wxmpl',
     version=extract_version(),
