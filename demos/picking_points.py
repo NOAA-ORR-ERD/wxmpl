@@ -1,5 +1,10 @@
 #!/usr/bin/env pythonw
 
+##########
+# WARNING:  point picking is not working with modern wxPython
+#           patches welcome!
+##########
+
 # Name: WxMplPoints.py
 # Purpose: Demonstrates point picking in WxMpl
 # Author: Ken McIvor <mcivor@iit.edu>
@@ -128,8 +133,8 @@ class MyFrame(wx.Frame):
         self._replot()
 
     def _on_point(self, evt):
-        # print "in _on_point", evt,
-        # print evt.xdata, evt.ydata
+        print("in _on_point", evt)
+        print(evt.xdata, evt.ydata)
         if self.pointButton.GetValue():
             self.pointButton.SetValue(False)
             if evt.axes is not None:

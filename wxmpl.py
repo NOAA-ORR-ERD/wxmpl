@@ -1879,6 +1879,8 @@ def make_bbox(X, Y):
 class StripCharter:
     """
     Plots and updates lines on a matplotlib C{Axes}.
+
+    FixMe: the legend jumps around -- proably want to fix that in place.
     """
     def __init__(self, axes):
         """
@@ -1896,8 +1898,9 @@ class StripCharter:
         self.channels = channels[:]
 
         # minimal Axes.cla()
-        self.axes.legend_ = None
-        self.axes.lines = []
+        self.axes.cla()
+#        self.axes.legend_ = None
+#        self.axes.lines = []
 
     def update(self):
         """
@@ -1950,7 +1953,7 @@ class StripCharter:
             x = y = []
             empty = True
 
-        line = styleGen(x, y).next()
+        line = next(styleGen(x, y))
         line._wxmpl_empty_line = empty
 
         if channel.getColor() is not None:
