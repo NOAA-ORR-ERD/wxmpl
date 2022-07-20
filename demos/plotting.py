@@ -24,8 +24,7 @@ import matplotlib
 import matplotlib.cm as cm
 import numpy as np
 
-from pylab import normpdf
-
+from scipy.stats import norm
 
 def plot_simple(fig):
     t = np.arange(0.0, 2.0, 0.01)
@@ -86,21 +85,23 @@ def plot_subplot_sharex(fig):
 
 def plot_histogram(fig):
     mu, sigma = 100, 15
-    x = mu + sigma * np.random.randn(10000)
+    num_samples = 1000
+    x = mu + sigma * np.random.randn(num_samples)
 
     axes = fig.gca()
     # the histogram of the data
-    n, bins, patches = axes.hist(x, 100, normed=1)
+    n, bins, patches = axes.hist(x, 50)
 
     # add a 'best fit' line
-    y = normpdf(bins, mu, sigma)
+    y = norm.pdf(bins, mu, sigma)
+    # note: this may not be scaled right -- my stats are lame.
+    y = y * x.sum() / (sigma * np.sqrt(2 * np.pi))
     l = axes.plot(bins, y, 'r--', linewidth=2)
 
     axes.set_xlim((40, 160))
     axes.set_xlabel('Smarts')
     axes.set_ylabel('P')
-    axes.set_title('IQ: mu=100, sigma=15')
-#    axes.set_title(r'$\rm{IQ:}\/ \mu=100,\/ \sigma=15$')
+    axes.set_title(r'$\rm{IQ:}\/ \mu=100,\/ \sigma=15$')
 
 
 def plot_fill(fig):
@@ -122,7 +123,7 @@ def plot_log(fig):
     a1.grid(True)
 
     a2 = fig.add_subplot(2, 1, 2)
-    a2.loglog(t, 20 * np.exp(-t / 10.0), basey=4)
+    a2.loglog(t, 20 * np.exp(-t / 10.0), base=4)
     a2.xaxis.grid(True, which='minor')  # minor grid on too
     a2.set_xlabel('time (s)')
     a2.set_ylabel('loglog')
@@ -261,7 +262,7 @@ def plot_axes(fig):
 
     # this is an inset axes over the main axes
     a = fig.add_axes([.65, .6, .2, .2], facecolor='y')
-    n, bins, patches = a.hist(s, 400, normed=1)
+    n, bins, patches = a.hist(s, 400)
     a.set_title('Probability')
     a.set_xticks([])
     a.set_yticks([])
