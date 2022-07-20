@@ -1,10 +1,30 @@
 
 Fork of Ken McIvors wxMPL project
----------------------------------
+=================================
 
-http://agni.phys.iit.edu/~kmcivor/wxmpl/
+Formerly at: http://agni.phys.iit.edu/~kmcivor/wxmpl/
 
 Ken has not maintained this for a while, and is no longer at IIT.
+
+Status
+------
+
+This package has seen little maintainance for years.
+
+However, it has been minimall updated to run with recent versions of
+Python, wxPython, and Matplotlib. It was most recently tested with:
+
+- Python 3.9
+- wxPython 4.1.1
+- matplotlib 3.5.2
+
+The demos run without errors.
+
+**NOTE:** picking functionality is disabled / broken -- it needs to be updated for modern wxPython (and maybe MPL, too)
+
+PRs accepted!
+
+-Chris Barker
 
 WxMpl - Painless matplotlib embedding for wxPython
 --------------------------------------------------
@@ -24,23 +44,20 @@ subdirectory.
 REQUIREMENTS
 ------------
 
-* Python 2.7 (would like to do a Py3 port, but not yet...)
-    http://www.python.org
+* Python 3.8 or greater: http://www.python.org
 
-* wxPython 4.0 or later
-    http://www.wxpython.org
+* wxPython 4.0 or later: http://www.wxpython.org
 
 (It may work with earlier versions, but this is what it was tested on)
 
-* matplotlib 2.1 or later
-    http://matplotlib.sourceforge.net
+* matplotlib 3.0 or later: https://matplotlib.org/
 
 (Also may work for eariler versions, but >= 0.9.8 anyway)
 
 PLATFORMS
 ---------
 
-WxMpl has been tested under Windows 10 and Mac OS 10.11 [wxPython 4.0.0].
+WxMpl has been tested under Windows 10 and Mac OS 11 [wxPython > 4.0.0]. It has also reported to work on Linux -- anywhere wxPython and matplotlib work should be fine.
 
 
 INSTALLATION
@@ -64,6 +81,7 @@ command:
 For information about other setuptools commands, execute the following command:
   > python setup.py install --help-commands
 
+**NOTE** The packaging system has not been updated for modern standards -- PRs accepted!
 
 AVAILABILITY
 ------------
@@ -77,7 +95,7 @@ AUTHOR
 
 WxMpl was written by: Ken McIvor <mcivor@iit.edu>
 
-Contirbutions from: Carlo Segre <segre@iit.edu>
+Contributions from: Carlo Segre <segre@iit.edu>
 
 Currently maintained by: Chris Barker <Chris.Barker@noaa.gov>
 
