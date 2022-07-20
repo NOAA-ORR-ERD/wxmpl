@@ -1504,7 +1504,7 @@ class PlotFrame(wx.Frame):
 
         try:
             self.panel.print_figure(fileName)
-        except IOError, e:
+        except IOError as e:
             if e.strerror:
                 err = e.strerror
             else:
