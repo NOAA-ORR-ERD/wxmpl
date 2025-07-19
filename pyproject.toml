@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "wxmpl"
+dynamic = ["version"]
+description = "A library for painlessly embedding matplotlib in wxPython"
+readme = "README.rst"
+license = "MIT"
+license-files = ["LICENSE.txt"]
+authors = [
+    { name = "Ken McIvor"},
+    { name = "Carlo Segre", email = "segre@iit.edu" },
+    { name = "Chris Barker", email = "Chris.Barker@noaa.gov"},
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Topic :: Desktop Environment",
+    "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/NOAA-ORR-ERD/wxmpl"
+
+[tool.hatch.version]
+path = "wxmpl/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "wxmpl/*",
+    "demos/*",
+    "reference/*"
+]
+
+# examples:
+# [tool.hatch.build.targets.sdist]
+# include = [
+#   "wxmpl/*.py",
+#   "/tests",
+# ]
+# exclude = [
+#   "*.json",
+#   "pkg/_compat.py",
+# ]
+
+

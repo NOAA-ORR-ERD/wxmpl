@@ -31,7 +31,7 @@ from matplotlib.figure import Figure
 from matplotlib.font_manager import FontProperties
 from matplotlib.transforms import Bbox
 
-__version__ = '2.3.0'
+__version__ = '2.3.2'
 
 __all__ = ['PlotPanel', 'PlotFrame', 'PlotApp', 'StripCharter', 'Channel',
            'FigurePrinter', 'PointEvent', 'EVT_POINT', 'SelectionEvent',

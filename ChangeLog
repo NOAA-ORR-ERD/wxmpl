@@ -1,10 +1,13 @@
+07-16-2025 Chris Barker <Chris.Barker@noaa.gov>
+   * updated to modern configuration -- pyproject.toml and hatch
+
 02-25-2016 Chris Barker <Chris.Barker@noaa.gov>
     * Release 2.2.0
     * Assorted updated for wxPython >= 4.0
     * Other updated for modern MPL (tested on '2.1.2')
 
 02-25-2016 Chris Barker <Chris.Barker@noaa.gov>
-    * re-structured to have simpler setup.py and stucture
+    * re-structured to have simpler setup.py and structure
     * added setuptools to allow develop mode.
 
 10-17-2011  Carlo Segre <segre@iit.edu>
