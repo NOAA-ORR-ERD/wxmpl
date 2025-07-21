@@ -6,21 +6,34 @@ Formerly at: http://agni.phys.iit.edu/~kmcivor/wxmpl/
 
 Ken has not maintained this for a while, and is no longer at IIT.
 
+**NOTE:** Perhaps maintaining this doesn't make sense.
+Rather, anyone using it should port their code to wxmplot:
+https://pypi.org/project/wxmplot/
+
+IIRC, wxmplot is heavier weight, but should support everything
+that wxmpl does -- and is is still maintained
+
 Status
 ------
 
-This package has seen little maintainance for years.
+This package has seen little maintenance for years.
 
-However, it has been minimall updated to run with recent versions of
+However, it has been minimally updated to run with recent versions of
 Python, wxPython, and Matplotlib. It was most recently tested with:
 
-- Python 3.9
-- wxPython 4.1.1
-- matplotlib 3.5.2
+- Python 3.13
+- wxPython 4.2.3
+- matplotlib 3.10.3
 
-The demos run without errors.
+Demo status:
 
-**NOTE:** picking functionality is disabled / broken -- it needs to be updated for modern wxPython (and maybe MPL, too)
+``plotting.py``: runs fine
+
+``picking_points.py``: no errors, but the point picking isn't working
+
+``stripcharting.py``: crashes out at startup
+
+**NOTE:** Picking functionality is disabled / broken -- it needs to be updated for modern wxPython (and maybe MPL, too)
 
 PRs accepted!
 
